@@ -1,10 +1,14 @@
-import { Activity, TrendingUp, Users, Zap } from "lucide-react";
+import { Activity, TrendingUp, Users, Zap, Loader2 } from "lucide-react";
 import StatCard from "@/components/StatCard";
 import TransactionList from "@/components/TransactionList";
 import { Card } from "@/components/ui/card";
 import networkBg from "@/assets/blockchain-network-bg.jpg";
+import { useAnalytics, useParticipants, formatAmount } from "@/hooks/useTransactions";
 
 export default function Dashboard() {
+  const { data: analytics, isLoading: analyticsLoading } = useAnalytics();
+  const { data: participants } = useParticipants();
+
   return (
     <div className="space-y-6 animate-fade-in">
       {/* Hero Section */}
@@ -36,7 +40,7 @@ export default function Dashboard() {
               </div>
               <div className="flex items-center gap-2 px-4 py-2 rounded-lg bg-secondary/10 border border-secondary/20">
                 <Zap className="h-4 w-4 text-secondary" />
-                <span className="text-sm font-medium text-secondary-foreground">Multi-chain Support</span>
+                <span className="text-sm font-medium text-secondary-foreground">Hyperledger Fabric</span>
               </div>
             </div>
           </div>
@@ -45,38 +49,46 @@ export default function Dashboard() {
 
       {/* Stats Grid */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <StatCard
-          title="Total Volume (24h)"
-          value="₦2.4B"
-          change="+12.5% from yesterday"
-          trend="up"
-          icon={TrendingUp}
-        />
-        <StatCard
-          title="Active Transactions"
-          value="1,247"
-          change="156 pending"
-          trend="neutral"
-          icon={Activity}
-        />
-        <StatCard
-          title="Connected Nodes"
-          value="48"
-          change="3 banks, 12 fintechs, 33 merchants"
-          trend="up"
-          icon={Users}
-        />
-        <StatCard
-          title="Avg. Settlement Time"
-          value="4.2s"
-          change="-2.1s improvement"
-          trend="up"
-          icon={Zap}
-        />
+        {analyticsLoading ? (
+          <Card className="col-span-4 p-8 flex items-center justify-center">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          </Card>
+        ) : (
+          <>
+            <StatCard
+              title="Total Volume"
+              value={formatAmount(analytics?.totalVolume || 0)}
+              change={`${analytics?.totalTransactions || 0} transactions`}
+              trend="up"
+              icon={TrendingUp}
+            />
+            <StatCard
+              title="Pending Transactions"
+              value={String(analytics?.pendingCount || 0)}
+              change={`${analytics?.settledCount || 0} settled`}
+              trend="neutral"
+              icon={Activity}
+            />
+            <StatCard
+              title="Network Participants"
+              value={String(participants?.length || 0)}
+              change="Banks & Organizations"
+              trend="up"
+              icon={Users}
+            />
+            <StatCard
+              title="Settlement Status"
+              value={analytics?.pendingCount === 0 ? "Clear" : "Pending"}
+              change={analytics?.pendingCount === 0 ? "All settled" : `${analytics?.pendingCount} to settle`}
+              trend={analytics?.pendingCount === 0 ? "up" : "neutral"}
+              icon={Zap}
+            />
+          </>
+        )}
       </div>
 
       {/* Recent Transactions */}
-      <TransactionList limit={4} />
+      <TransactionList limit={5} />
     </div>
   );
 }

@@ -1,0 +1,17 @@
+[Unit]
+Description=Rezo Frontend - Blockchain Settlement Dashboard
+After=network.target rezo-backend.service
+
+[Service]
+Type=simple
+User=compadmin
+WorkingDirectory=/home/compadmin/fabric-network/rezo-fe
+ExecStart=/usr/bin/npm run dev
+Restart=on-failure
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+Environment=NODE_ENV=development
+
+[Install]
+WantedBy=multi-user.target

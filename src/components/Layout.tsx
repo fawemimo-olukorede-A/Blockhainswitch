@@ -17,12 +17,15 @@ export default function Layout() {
       {/* Header */}
       <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="container flex h-16 items-center px-4">
-          <div className="flex items-center gap-3">
+          <NavLink
+            to="/"
+            className="flex items-center gap-3 hover:opacity-90 transition-opacity"
+          >
             <img src={rezoLogo} alt="ReZo" className="h-10 w-10" />
             <span className="text-xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
               ReZo
             </span>
-          </div>
+          </NavLink>
 
           {/* Desktop Navigation */}
           <nav className="ml-12 hidden md:flex items-center gap-1">
