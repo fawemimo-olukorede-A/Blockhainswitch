@@ -36,12 +36,14 @@ import TransactionDetailsDialog from "@/components/TransactionDetailsDialog";
 import { useTransactions, useAnalytics, useParticipants, useSubmitTransaction, useSubmitCardTransaction, formatAmount, formatTimestamp, getOrgDisplayName, getTxTypeDisplayName, getAcquirer, getIssuer } from "@/hooks/useTransactions";
 import type { Transaction } from "@/services/api";
 import { useToast } from "@/hooks/use-toast";
-import { CreditCard, AlertTriangle } from "lucide-react";
+import { CreditCard, AlertTriangle, XCircle } from "lucide-react";
 
 const statusConfig = {
-  PENDING: { icon: Clock, color: "text-warning", bg: "bg-warning/10" },
-  SETTLED: { icon: CheckCircle2, color: "text-success", bg: "bg-success/10" },
-  DISPUTED: { icon: AlertTriangle, color: "text-destructive", bg: "bg-destructive/10" },
+  PENDING: { icon: Clock, color: "text-warning", bg: "bg-warning/10", label: "Pending" },
+  SETTLED: { icon: CheckCircle2, color: "text-success", bg: "bg-success/10", label: "Settled" },
+  APPROVED: { icon: CheckCircle2, color: "text-success", bg: "bg-success/10", label: "Approved" },
+  DECLINED: { icon: XCircle, color: "text-destructive", bg: "bg-destructive/10", label: "Declined" },
+  DISPUTED: { icon: AlertTriangle, color: "text-destructive", bg: "bg-destructive/10", label: "Disputed" },
 };
 
 export default function Transactions() {
@@ -66,7 +68,12 @@ export default function Transactions() {
   const [merchantName, setMerchantName] = useState("");
   const [metadata, setMetadata] = useState("");
 
-  const filteredTransactions = transactions?.filter(
+  // Sort transactions by timestamp descending (newest first), then filter
+  const sortedTransactions = transactions
+    ? [...transactions].sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
+    : [];
+
+  const filteredTransactions = sortedTransactions.filter(
     (tx) =>
       tx.txId.toLowerCase().includes(searchQuery.toLowerCase()) ||
       (tx.rrn && tx.rrn.toLowerCase().includes(searchQuery.toLowerCase())) ||
@@ -75,7 +82,7 @@ export default function Transactions() {
       getIssuer(tx).toLowerCase().includes(searchQuery.toLowerCase()) ||
       tx.merchantName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       tx.metadata?.toLowerCase().includes(searchQuery.toLowerCase())
-  ) || [];
+  );
 
   const handleTransactionClick = (tx: Transaction) => {
     setSelectedTransaction(tx);
@@ -323,7 +330,14 @@ export default function Transactions() {
             </TableHeader>
             <TableBody>
               {filteredTransactions.map((tx) => {
-                const status = statusConfig[tx.status] || statusConfig.PENDING;
+                // Determine status: Settled for success (00,10,11), Declined for others
+                let statusKey = tx.status;
+                if (tx.responseCode) {
+                  statusKey = (tx.responseCode === '00' || tx.responseCode === '10' || tx.responseCode === '11')
+                    ? 'SETTLED'
+                    : 'DECLINED';
+                }
+                const status = statusConfig[statusKey] || statusConfig.SETTLED;
                 const StatusIcon = status.icon;
                 const acquirer = getAcquirer(tx);
                 const issuer = getIssuer(tx);
@@ -393,8 +407,8 @@ export default function Transactions() {
                     <TableCell>
                       <div className={`inline-flex items-center gap-1.5 px-2 py-1 rounded ${status.bg}`}>
                         <StatusIcon className={`h-3 w-3 ${status.color}`} />
-                        <span className={`text-xs font-medium capitalize ${status.color}`}>
-                          {tx.status.toLowerCase()}
+                        <span className={`text-xs font-medium ${status.color}`}>
+                          {status.label}
                         </span>
                       </div>
                     </TableCell>
