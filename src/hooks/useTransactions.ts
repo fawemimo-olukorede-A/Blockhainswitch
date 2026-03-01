@@ -221,26 +221,36 @@ export function formatAmount(amount: number, currency: string = 'NGN'): string {
   }).format(amount);
 }
 
-// Helper to format timestamp
+// Helper to format timestamp - shows actual time for recent, relative for older
 export function formatTimestamp(timestamp: string): string {
   const date = new Date(timestamp);
   const now = new Date();
   const diffMs = now.getTime() - date.getTime();
   const diffMins = Math.floor(diffMs / 60000);
-
-  if (diffMins < 1) return 'Just now';
-  if (diffMins < 60) return `${diffMins} min${diffMins > 1 ? 's' : ''} ago`;
-
   const diffHours = Math.floor(diffMins / 60);
-  if (diffHours < 24) return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
-
   const diffDays = Math.floor(diffHours / 24);
-  if (diffDays < 7) return `${diffDays} day${diffDays > 1 ? 's' : ''} ago`;
+
+  // For today's transactions, show the actual time
+  const isToday = date.toDateString() === now.toDateString();
+  const timeStr = date.toLocaleTimeString('en-NG', {
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: true,
+  });
+
+  if (diffMins < 1) return `Just now (${timeStr})`;
+  if (diffMins < 60) return `${diffMins} min${diffMins > 1 ? 's' : ''} ago`;
+  if (isToday) return `Today ${timeStr}`;
+
+  if (diffDays === 1) return `Yesterday ${timeStr}`;
+  if (diffDays < 7) return `${diffDays} days ago`;
 
   return date.toLocaleDateString('en-NG', {
     year: 'numeric',
     month: 'short',
     day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
   });
 }
 
@@ -291,10 +301,13 @@ export function getTxTypeDisplayName(txType: string | undefined): string {
 
   const types: Record<string, string> = {
     PURCHASE: 'Purchase',
+    PURCHASE_CASHBACK: 'Purchase + Cashback',
     WITHDRAWAL: 'Withdrawal',
+    DEPOSIT: 'Deposit',
     REFUND: 'Refund',
     REVERSAL: 'Reversal',
     TRANSFER: 'Transfer',
+    PAYMENT: 'Payment',
     BALANCE_INQUIRY: 'Balance Inquiry',
   };
 

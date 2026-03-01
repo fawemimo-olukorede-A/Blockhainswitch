@@ -33,7 +33,7 @@ export interface Transaction {
   responseCode?: string;     // ISO 8583 response code (00 = approved)
 
   // Status
-  status: 'PENDING' | 'SETTLED' | 'DISPUTED';
+  status: 'PENDING' | 'SETTLED' | 'DISPUTED' | 'APPROVED' | 'DECLINED';
   timestamp: string;
   settlementTimestamp?: string;  // When settled (NEW)
 

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ArrowUpRight, ArrowDownLeft, Clock, CheckCircle2, AlertTriangle, Loader2, CreditCard } from "lucide-react";
+import { ArrowUpRight, ArrowDownLeft, Clock, CheckCircle2, AlertTriangle, Loader2, CreditCard, XCircle } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import TransactionDetailsDialog from "./TransactionDetailsDialog";
@@ -9,6 +9,8 @@ import type { Transaction } from "@/services/api";
 const statusConfig = {
   PENDING: { icon: Clock, color: "text-warning", bg: "bg-warning/10", border: "border-warning/20", label: "Pending" },
   SETTLED: { icon: CheckCircle2, color: "text-success", bg: "bg-success/10", border: "border-success/20", label: "Settled" },
+  APPROVED: { icon: CheckCircle2, color: "text-success", bg: "bg-success/10", border: "border-success/20", label: "Approved" },
+  DECLINED: { icon: XCircle, color: "text-destructive", bg: "bg-destructive/10", border: "border-destructive/20", label: "Declined" },
   DISPUTED: { icon: AlertTriangle, color: "text-destructive", bg: "bg-destructive/10", border: "border-destructive/20", label: "Disputed" },
 };
 
@@ -21,7 +23,11 @@ export default function TransactionList({ limit }: TransactionListProps) {
   const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
 
-  const displayTransactions = limit ? transactions?.slice(0, limit) : transactions;
+  // Sort transactions by timestamp descending (newest first)
+  const sortedTransactions = transactions
+    ? [...transactions].sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
+    : [];
+  const displayTransactions = limit ? sortedTransactions.slice(0, limit) : sortedTransactions;
 
   const handleTransactionClick = (transaction: Transaction) => {
     setSelectedTransaction(transaction);
@@ -60,9 +66,9 @@ export default function TransactionList({ limit }: TransactionListProps) {
         <div className="p-6">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-semibold text-foreground">Recent Transactions</h3>
-            {transactions && (
+            {sortedTransactions.length > 0 && (
               <span className="text-sm text-muted-foreground">
-                {transactions.length} total
+                {sortedTransactions.length} total
               </span>
             )}
           </div>
@@ -74,7 +80,14 @@ export default function TransactionList({ limit }: TransactionListProps) {
           ) : (
             <div className="space-y-3">
               {displayTransactions.map((tx) => {
-                const status = statusConfig[tx.status] || statusConfig.PENDING;
+                // Determine status from responseCode if available
+                let statusKey = tx.status;
+                if (tx.responseCode) {
+                  statusKey = (tx.responseCode === '00' || tx.responseCode === '10' || tx.responseCode === '11')
+                    ? 'APPROVED'
+                    : 'DECLINED';
+                }
+                const status = statusConfig[statusKey] || statusConfig.PENDING;
                 const StatusIcon = status.icon;
                 const acquirer = getAcquirer(tx);
                 const issuer = getIssuer(tx);
@@ -133,6 +146,7 @@ export default function TransactionList({ limit }: TransactionListProps) {
                       <StatusIcon className={`h-3 w-3 ${status.color}`} />
                       <span className={`text-xs font-medium ${status.color}`}>
                         {status.label}
+                        {tx.responseCode && tx.responseCode !== '00' && ` (${tx.responseCode})`}
                       </span>
                     </div>
                   </div>
