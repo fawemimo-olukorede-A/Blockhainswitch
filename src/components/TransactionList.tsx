@@ -80,14 +80,14 @@ export default function TransactionList({ limit }: TransactionListProps) {
           ) : (
             <div className="space-y-3">
               {displayTransactions.map((tx) => {
-                // Determine status from responseCode if available
+                // Determine status: Settled for success (00,10,11), Declined for others
                 let statusKey = tx.status;
                 if (tx.responseCode) {
                   statusKey = (tx.responseCode === '00' || tx.responseCode === '10' || tx.responseCode === '11')
-                    ? 'APPROVED'
+                    ? 'SETTLED'
                     : 'DECLINED';
                 }
-                const status = statusConfig[statusKey] || statusConfig.PENDING;
+                const status = statusConfig[statusKey] || statusConfig.SETTLED;
                 const StatusIcon = status.icon;
                 const acquirer = getAcquirer(tx);
                 const issuer = getIssuer(tx);
@@ -146,7 +146,6 @@ export default function TransactionList({ limit }: TransactionListProps) {
                       <StatusIcon className={`h-3 w-3 ${status.color}`} />
                       <span className={`text-xs font-medium ${status.color}`}>
                         {status.label}
-                        {tx.responseCode && tx.responseCode !== '00' && ` (${tx.responseCode})`}
                       </span>
                     </div>
                   </div>
